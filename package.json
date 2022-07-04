@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "build": "echo hello  world",
+    "build": "cross-env NODE_ENV=production webpack --config build/webpack.config.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
@@ -15,5 +15,8 @@
     "nodemon": "^2.0.18",
     "socket.io": "^4.5.1",
     "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }
