@@ -107,7 +107,7 @@ const rooms={
 
 const players={};
 const gravity=new Force(0,5);
-const interval_time=20,delta_time=0.4,mass=10,velocity_friction=0.82,force_friction=0.99,up_delta=20,side_delta=40,block_size=50,position_delta=0.4;
+const interval_time=20,delta_time=0.4,mass=10,velocity_friction=0.8,force_friction=0.99,up_delta=20,side_delta=1.4,block_size=50,position_delta=0.4;
 
 //initial map
 
@@ -158,16 +158,12 @@ function physics(){
     Object.keys(players).forEach(key_player=>{
         if(players[key_player].room===undefined)return;
 
-        //summing forces
-
-        let sum_force={x:0,y:0};
-        if(Object.keys(players[key_player].forces)[0]!==undefined)Object.keys(players[key_player].forces).forEach(key_force=>{
-            sum_force.x+=players[key_player].forces[key_force].x;
-            sum_force.y+=players[key_player].forces[key_force].y;
-        });
-
         //collisions
 
+        let force_sum={
+            x:players[key_player].forces.side.x,
+            y:players[key_player].forces.gravity.x,
+        };
         let player1={
             min:{
                 x:players[key_player].position.x,
@@ -184,31 +180,6 @@ function physics(){
             max:{},
         };
 
-        //walls
-
-        if(player1.min.x<=3*block_size){
-            sum_force.x=0;
-            players[key_player].forces.side.x=0;
-            players[key_player].velocity.x=0;
-            players[key_player].position.x+=position_delta;
-        }
-        if(player1.min.y<=3*block_size){
-            sum_force.y=0;
-            players[key_player].velocity.y=0;
-            players[key_player].position.y+=position_delta;
-        }
-        if(player1.max.x>=map_size.x+block_size){
-            sum_force.x=0;
-            players[key_player].forces.side.x=0;
-            players[key_player].velocity.x=0;
-            players[key_player].position.x-=position_delta;
-        }
-        if(player1.max.y>=map_size.y+block_size){
-            sum_force.y=0;
-            players[key_player].velocity.y=0;
-            players[key_player].position.y-=position_delta;
-        }
-
         //players
 
         if(player1.room!==undefined)player1.room.players.forEach(in_room=>{//in_room===token of the player
@@ -224,24 +195,85 @@ function physics(){
                     x:players[key_player].velocity.x+players[in_room].velocity.x,
                     y:players[key_player].velocity.y+players[in_room].velocity.y,
                 };
+                force_sum.x+=players[in_room].forces.side.x;
 
-                if(players[key_player].velocity.x>0!==players[in_room].velocity.x>0){
+                if(players[key_player].velocity.x>=0!==players[in_room].velocity.x>=0){
                     players[key_player].velocity.x=velocity_sum.x;
                     players[in_room].velocity.x=velocity_sum.x;
-                    players[key_player].position.x+=position_delta*(-1+2*(player1.min.x>player2.min.x));
+                    players[key_player].position.x+=position_delta*4*(-1+2*(player1.min.x>player2.min.x));
+                    players[in_room].position.x+=position_delta*4*(1-2*(player1.min.x>player2.min.x));
+                }else{
+                    if(Math.abs(players[key_player].velocity.x)>Math.abs(players[in_room].velocity.x)){
+                        players[key_player].velocity.x=players[key_player].velocity.x
+                        players[in_room].velocity.x=players[key_player].velocity.x;
+                    }else{
+                        players[key_player].velocity.x=players[in_room].velocity.x
+                        players[in_room].velocity.x=players[in_room].velocity.x;
+                    }
+                    players[key_player].position.x+=position_delta*4*(-1+2*(player1.min.x>player2.min.x));
+                    players[in_room].position.x+=position_delta*4*(1-2*(player1.min.x>player2.min.x));
                 }
-                if(players[key_player].velocity.y>0!==players[in_room].velocity.y>0){
+                if(players[key_player].velocity.y>=0!==players[in_room].velocity.y>=0){
                     players[key_player].velocity.y=velocity_sum.y;
                     players[in_room].velocity.y=velocity_sum.y;
-                    players[key_player].position.y+=position_delta*(-1+2*(player1.min.y>player2.min.y));
+                    players[key_player].position.y+=position_delta*4*(-1+2*(player1.min.y>player2.min.y));
+                    players[in_room].position.y+=position_delta*4*(1-2*(player1.min.y>player2.min.y));
+                }else{
+                    if(Math.abs(players[key_player].velocity.y)>Math.abs(players[in_room].velocity.y)){
+                        players[key_player].velocity.y=players[key_player].velocity.y
+                        players[in_room].velocity.y=players[key_player].velocity.y;
+                    }else{
+                        players[key_player].velocity.y=players[in_room].velocity.y
+                        players[in_room].velocity.y=players[in_room].velocity.y;
+                    }
+                    players[key_player].position.y+=position_delta*4*(-1+2*(player1.min.y>player2.min.y));
+                    players[in_room].position.y+=position_delta*4*(1-2*(player1.min.y>player2.min.y));
+                }
+
+                if(players[key_player].forces.side.x>0!==players[in_room].forces.side.x>0){
+                    players[key_player].forces.side.x=force_sum.x;
+                    players[in_room].forces.side.x=force_sum.x;
+                }else{
+                    if(Math.abs(players[key_player].forces.side.x)>Math.abs(players[in_room].forces.side.x)){
+                        players[key_player].forces.side.x=players[key_player].forces.side.x
+                        players[in_room].forces.side.x=players[key_player].forces.side.x;
+                    }else{
+                        players[key_player].forces.side.x=players[in_room].forces.side.x
+                        players[in_room].forces.side.x=players[in_room].forces.side.x;
+                    }
                 }
             }
         });
 
+        //walls
+
+        if(player1.min.x<=3*block_size){
+            force_sum.x=0;
+            players[key_player].forces.side.x=0;
+            players[key_player].velocity.x=0;
+            players[key_player].position.x+=position_delta;
+        }
+        if(player1.min.y<=3*block_size){
+            force_sum.y=0;
+            players[key_player].velocity.y=0;
+            players[key_player].position.y+=position_delta;
+        }
+        if(player1.max.x>=map_size.x+block_size){
+            force_sum.x=0;
+            players[key_player].forces.side.x=0;
+            players[key_player].velocity.x=0;
+            players[key_player].position.x-=position_delta;
+        }
+        if(player1.max.y>=map_size.y+block_size){
+            force_sum.y=0;
+            players[key_player].velocity.y=0;
+            players[key_player].position.y-=position_delta;
+        }
+
         //forces to velocity and repositioning
 
-        players[key_player].velocity.x+=sum_force.x/mass*delta_time;
-        players[key_player].velocity.y+=sum_force.y/mass*delta_time;
+        players[key_player].velocity.x+=players[key_player].forces.side.x/mass*delta_time;
+        players[key_player].velocity.y+=players[key_player].forces.gravity.y/mass*delta_time;
         players[key_player].position.x+=players[key_player].velocity.x;
         players[key_player].position.y+=players[key_player].velocity.y;
         players[key_player].velocity.x*=velocity_friction;
@@ -311,7 +343,7 @@ Io.on('connection', (socket)=>{
     socket.on(socket_message.button.up, (token)=>players[token].velocity.y=-1*up_delta*delta_time);
 
     socket.on(socket_message.button.left, (token)=>{
-        players[token].forces.side.x=Math.max(-side_delta,players[token].forces.side.x-2*block_size*delta_time);
+        players[token].forces.side.x=Math.max(players[token].forces.side.x-side_delta,-3*block_size*delta_time);
         players[token].side_force=true;
         players[token].direction='left';
         clearTimeout(side_force_timeout);
@@ -319,7 +351,7 @@ Io.on('connection', (socket)=>{
     });
 
     socket.on(socket_message.button.right, (token)=>{
-        players[token].forces.side.x=Math.min(side_delta,players[token].forces.side.x+2*block_size*delta_time);
+        players[token].forces.side.x=Math.min(players[token].forces.side.x+side_delta,3*block_size*delta_time);
         players[token].side_force=true;
         players[token].direction='right';
         clearTimeout(side_force_timeout);
