@@ -203,7 +203,7 @@ function physics(){
 
         let force_sum={
             x:players[key_player].forces.side.x,
-            y:players[key_player].forces.gravity.x,
+            y:players[key_player].forces.gravity.y,
         };
         let player1={
             min:{
