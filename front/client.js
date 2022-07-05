@@ -86,12 +86,41 @@ function draw(){
 
     players_to_draw.forEach(player=>{
         if(player===undefined)return;
-        if(player.direction==='right') ctx.drawImage(game_objects[player.name].image[player.direction],
-            canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
-            game_objects[player.name].width,game_objects[player.name].height);
-        else ctx.drawImage(game_objects[player.name].image[player.direction],
-            canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width-game_objects.scythe.width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
-            game_objects[player.name].width,game_objects[player.name].height);
+        if(player.direction==='right'){
+            ctx.fillStyle='#000000';//black
+            ctx.drawImage(game_objects[player.name].image[player.direction],
+                canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width,
+                canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
+                game_objects[player.name].width,game_objects[player.name].height);
+            
+            ctx.fillRect(canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width,
+                canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height-2*fontsize,
+                game_objects.health_bar.border.width,
+                game_objects.health_bar.border.height);
+            
+            ctx.fillStyle='#37ff00';//green
+            ctx.fillRect(canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width+(game_objects.health_bar.border.width-game_objects.health_bar.bar.width)/2,
+                canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height-2*fontsize+(game_objects.health_bar.border.height-game_objects.health_bar.bar.height)/2,
+                Math.max(0,game_objects.health_bar.bar.width*player.health/100),
+                game_objects.health_bar.bar.height);
+        }else{
+            ctx.fillStyle='#000000';//black
+            ctx.drawImage(game_objects[player.name].image[player.direction],
+                canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width-game_objects.scythe.width,
+                canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
+                game_objects[player.name].width,game_objects[player.name].height);
+            
+            ctx.fillRect(canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width,
+                canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height-2*fontsize,
+                game_objects.health_bar.border.width,
+                game_objects.health_bar.border.height);
+            
+            ctx.fillStyle='#37ff00';//green
+            ctx.fillRect(canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width+(game_objects.health_bar.border.width-game_objects.health_bar.bar.width)/2,
+                canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height-2*fontsize+(game_objects.health_bar.border.height-game_objects.health_bar.bar.height)/2,
+                Math.max(0,game_objects.health_bar.bar.width*player.health/100),
+                game_objects.health_bar.bar.height);
+        }
             
         ctx.fillStyle='#000000';//black
         ctx.fillText(player.nick,canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width+1*game_objects.scythe.width-fontsize/3*Math.floor(player.nick.length/2),canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height);
@@ -104,6 +133,7 @@ function draw(){
             canvas.height/2-me.height,
             me.width,
             me.height);
+        
         ctx.fillRect(canvas.width/2-me.width,
             canvas.height/2-me.height-2*fontsize,
             game_objects.health_bar.border.width,
@@ -112,7 +142,7 @@ function draw(){
         ctx.fillStyle='#37ff00';//green
         ctx.fillRect(canvas.width/2-me.width+(game_objects.health_bar.border.width-game_objects.health_bar.bar.width)/2,
             canvas.height/2-me.height-2*fontsize+(game_objects.health_bar.border.height-game_objects.health_bar.bar.height)/2,
-            game_objects.health_bar.bar.width,
+            Math.max(0,game_objects.health_bar.bar.width*me.health/100),
             game_objects.health_bar.bar.height);
     }else{
         ctx.fillStyle='#000000';//black
@@ -129,7 +159,7 @@ function draw(){
         ctx.fillStyle='#37ff00';//green
         ctx.fillRect(canvas.width/2-me.width+(game_objects.health_bar.border.width-game_objects.health_bar.bar.width)/2,
             canvas.height/2-me.height-2*fontsize+(game_objects.health_bar.border.height-game_objects.health_bar.bar.height)/2,
-            game_objects.health_bar.bar.width,
+            Math.max(0,game_objects.health_bar.bar.width*me.health/100),
             game_objects.health_bar.bar.height);
     }
     
@@ -163,11 +193,14 @@ me.token=create_token();
 
 socket.emit(socket_message.init_player,{width:canvas.width,height:canvas.height});
 
-socket.on(socket_message.init_player,token=>me.token=token);
+socket.on(socket_message.init_player,token=>{me.token=token});
 
 socket.on(socket_message.enter_room,room=>start_game());
 
-socket.on(socket_message.get_info,player=>{if(player!==undefined){me=player;me.width=100;}});
+socket.on(socket_message.get_info,player=>{if(player!==undefined){
+    me.position=player.position;
+    me.health=player.health;
+}});
 
 socket.on(socket_message.map_to_draw,map=>map_to_draw=map);
 

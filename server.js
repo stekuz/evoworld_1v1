@@ -60,6 +60,7 @@ class Player{
         width:35,
         height:110,
     };
+    damage=35;
     health=100;
     room;
     nick;
@@ -185,10 +186,12 @@ function hit(token){
     if(players[token]===undefined)return;
     if(players[token].room===undefined)return;
 
-    players[token].room.forEach(player=>{//player~token
+    players[token].room.players.forEach(player=>{//player~token
         if(token===player||player===undefined)return;
 
-        if(is_collision(players[player],players[token].scythe))players[player].health-=players[token].damage;
+        if(is_collision(players[player],players[token].scythe)){
+            players[player].health-=players[token].damage;
+        }
     });
 }
 
@@ -229,7 +232,7 @@ function physics(){
 
             //is collision?
 
-            if(is_collision(player[key_player],player[in_room])){
+            if(is_collision(players[key_player],players[in_room])){
                 let velocity_sum={
                     x:players[key_player].velocity.x+players[in_room].velocity.x,
                     y:players[key_player].velocity.y+players[in_room].velocity.y,
@@ -329,7 +332,7 @@ function physics(){
 
         players[key_player].scythe.position.y=players[key_player].position.y-(players[key_player].scythe.height-players[key_player].height)/2;
         if(players[key_player].direction==='right')players[key_player].scythe.position.x=players[key_player].position.x+players[key_player].width;
-        else players[key_player].scythe.position.x=players[key_player].position.x-players[key_player].width;
+        else players[key_player].scythe.position.x=players[key_player].position.x-players[key_player].scythe.width;
     });
 }
 
@@ -381,7 +384,7 @@ Io.on('connection', (socket)=>{
         socket.emit(socket_message.enter_room,connect_to_room(player.token));
         players[player.token].nick=player.nick;
         players[player.token].forces.gravity=gravity;
-        console.log(players);
+        //console.log(players);
     });
 
     socket.on(socket_message.init_player, (canvas)=>{
@@ -390,12 +393,16 @@ Io.on('connection', (socket)=>{
         socket.emit(socket_message.init_player, token);
         clearInterval(get_interval);
         get_interval=setInterval(info_to_player,interval_time,socket,token);
-        console.log(players);
+        //console.log(players);
     });
 
-    socket.on(socket_message.button.up, (token)=>players[token].velocity.y=-1*up_delta*delta_time);
+    socket.on(socket_message.button.up, (token)=>{
+        if(players[token]===undefined)return;
+        players[token].velocity.y=-1*up_delta*delta_time;
+    });
 
     socket.on(socket_message.button.left, (token)=>{
+        if(players[token]===undefined)return;
         players[token].forces.side.x=Math.max(players[token].forces.side.x-side_delta,-3*block_size*delta_time);
         players[token].side_force=true;
         players[token].direction='left';
@@ -404,6 +411,7 @@ Io.on('connection', (socket)=>{
     });
 
     socket.on(socket_message.button.right, (token)=>{
+        if(players[token]===undefined)return;
         players[token].forces.side.x=Math.min(players[token].forces.side.x+side_delta,3*block_size*delta_time);
         players[token].side_force=true;
         players[token].direction='right';
@@ -412,6 +420,7 @@ Io.on('connection', (socket)=>{
     });
 
     socket.on(socket_message.button.hit, (token)=>{
+        if(players[token]===undefined)return;
         if(players[token].can_hit&&players[token].health>0){
             players[token].can_hit=false;
             setTimeout(()=>players[token].can_hit=true,hit_delta);
