@@ -21,11 +21,12 @@ class Room_guest{
 }
 
 class Game_object{
-    constructor(name,position,nick,direction){
+    constructor(name,position,nick,direction,health){
         this.name=name;
         this.position=position;
         this.nick=nick;
         this.direction=direction;
+        this.health=health;
     }
 }
 
@@ -51,10 +52,20 @@ class Player{
     constructor(canvas){
         this.canvas=canvas;
     }
+    scythe={
+        position:{
+            x:265,
+            y:195,
+        },
+        width:35,
+        height:110,
+    };
+    health=100;
     room;
     nick;
     name='reaper';
     direction='right';
+    can_hit=true;
     position={
         x:200,
         y:200,
@@ -107,7 +118,18 @@ const rooms={
 
 const players={};
 const gravity=new Force(0,5);
-const interval_time=20,delta_time=0.4,mass=10,velocity_friction=0.8,force_friction=0.99,up_delta=20,side_delta=1.4,block_size=50,position_delta=0.4;
+const //scale
+interval_time=20,
+delta_time=0.4,
+mass=10,
+velocity_friction=0.8,
+force_friction=0.99,
+up_delta=20,
+side_delta=1.4,
+block_size=50,
+position_delta=0.4,
+damage=50,
+hit_delta=500;
 
 //initial map
 
@@ -154,6 +176,22 @@ function connect_to_room(token){
 
 //physics for players in rooms
 
+function is_collision(object1,object2){//object~{position{x,y},width,height}
+    return ((object1.position.x>=object2.position.x&&object1.position.x<=object2.position.x+object2.width||object1.position.x+object1.width>=object2.position.x&&object1.position.x+object1.width<=object2.position.x+object2.width)&&
+    (object1.position.y>=object2.position.y&&object1.position.y<=object2.position.y+object2.height||object1.position.y+object1.height>=object2.position.y&&object1.position.y+object1.height<=object2.position.y+object2.height));
+}
+
+function hit(token){
+    if(players[token]===undefined)return;
+    if(players[token].room===undefined)return;
+
+    players[token].room.forEach(player=>{//player~token
+        if(token===player||player===undefined)return;
+
+        if(is_collision(players[player],players[token].scythe))players[player].health-=players[token].damage;
+    });
+}
+
 function physics(){
     Object.keys(players).forEach(key_player=>{
         if(players[key_player].room===undefined)return;
@@ -182,20 +220,23 @@ function physics(){
 
         //players
 
-        if(player1.room!==undefined)player1.room.players.forEach(in_room=>{//in_room===token of the player
+        if(player1.room!==undefined)player1.room.players.forEach(in_room=>{//in_room~token
             if(in_room===key_player||in_room===undefined||players[in_room]===undefined)return;
             player2.min.x=players[in_room].position.x;
             player2.min.y=players[in_room].position.y;
             player2.max.x=players[in_room].position.x+players[in_room].width;
             player2.max.y=players[in_room].position.y+players[in_room].height;
 
-            if((player1.min.x>=player2.min.x&&player1.min.x<=player2.max.x||player1.max.x>=player2.min.x&&player1.max.x<=player2.max.x)&&
-            (player1.min.y>=player2.min.y&&player1.min.y<=player2.max.y||player1.max.y>=player2.min.y&&player1.max.y<=player2.max.y)){
+            //is collision?
+
+            if(is_collision(player[key_player],player[in_room])){
                 let velocity_sum={
                     x:players[key_player].velocity.x+players[in_room].velocity.x,
                     y:players[key_player].velocity.y+players[in_room].velocity.y,
                 };
                 force_sum.x+=players[in_room].forces.side.x;
+
+                //x velocity
 
                 if(players[key_player].velocity.x>=0!==players[in_room].velocity.x>=0){
                     players[key_player].velocity.x=velocity_sum.x;
@@ -213,6 +254,9 @@ function physics(){
                     players[key_player].position.x+=position_delta*4*(-1+2*(player1.min.x>player2.min.x));
                     players[in_room].position.x+=position_delta*4*(1-2*(player1.min.x>player2.min.x));
                 }
+
+                //y velocity 
+
                 if(players[key_player].velocity.y>=0!==players[in_room].velocity.y>=0){
                     players[key_player].velocity.y=velocity_sum.y;
                     players[in_room].velocity.y=velocity_sum.y;
@@ -229,6 +273,8 @@ function physics(){
                     players[key_player].position.y+=position_delta*4*(-1+2*(player1.min.y>player2.min.y));
                     players[in_room].position.y+=position_delta*4*(1-2*(player1.min.y>player2.min.y));
                 }
+
+                //x force
 
                 if(players[key_player].forces.side.x>0!==players[in_room].forces.side.x>0){
                     players[key_player].forces.side.x=force_sum.x;
@@ -278,6 +324,12 @@ function physics(){
         players[key_player].position.y+=players[key_player].velocity.y;
         players[key_player].velocity.x*=velocity_friction;
         if(!players[key_player].side_force)players[key_player].forces.side.x*=force_friction;
+
+        //scythe 
+
+        players[key_player].scythe.position.y=players[key_player].position.y-(players[key_player].scythe.height-players[key_player].height)/2;
+        if(players[key_player].direction==='right')players[key_player].scythe.position.x=players[key_player].position.x+players[key_player].width;
+        else players[key_player].scythe.position.x=players[key_player].position.x-players[key_player].width;
     });
 }
 
@@ -309,7 +361,8 @@ function info_to_player(socket,token){
             players[in_room].name,
             {x:players[in_room].position.x,y:players[in_room].position.y},
             players[in_room].nick,
-            players[in_room].direction
+            players[in_room].direction,
+            players[in_room].health
             ));
     });
 
@@ -356,6 +409,14 @@ Io.on('connection', (socket)=>{
         players[token].direction='right';
         clearTimeout(side_force_timeout);
         side_force_timeout=setTimeout(()=>{players[token].side_force=false},5*interval_time);
+    });
+
+    socket.on(socket_message.button.hit, (token)=>{
+        if(players[token].can_hit&&players[token].health>0){
+            players[token].can_hit=false;
+            setTimeout(()=>players[token].can_hit=true,hit_delta);
+            hit(token);
+        }
     });
 });
 

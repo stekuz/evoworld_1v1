@@ -15,13 +15,24 @@ const socket_message={
 const socket=io();
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d');
-const me={
+let me={
     name:'reaper',
+    health:100,
     width:100,
     height:100,
     direction:'right',
 };
 const game_objects={
+    health_bar:{
+        border:{
+            width:65,
+            height:30,
+        },
+        bar:{
+            width:61,
+            height:26,
+        },
+    },
     scythe:{
         width:35,
         height:110,
@@ -65,7 +76,6 @@ function room_connection_init(){
 function draw(){
     ctx.fillStyle='#44c3e7';//blue for bg
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#000000';//black for text
     
     map_to_draw.forEach(object=>{
         if(object===undefined)return;
@@ -82,11 +92,48 @@ function draw(){
         else ctx.drawImage(game_objects[player.name].image[player.direction],
             canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width-game_objects.scythe.width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
             game_objects[player.name].width,game_objects[player.name].height);
+            
+        ctx.fillStyle='#000000';//black
         ctx.fillText(player.nick,canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width+1*game_objects.scythe.width-fontsize/3*Math.floor(player.nick.length/2),canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height);
     });
 
-    if(me.direction==='right')ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.width,canvas.height/2-me.height,me.width,me.height);
-    else ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.width-game_objects.scythe.width,canvas.height/2-me.height,me.width,me.height);
+    if(me.direction==='right'){
+        ctx.fillStyle='#000000';//black
+        ctx.drawImage(game_objects[me.name].image[me.direction],
+            canvas.width/2-me.width,
+            canvas.height/2-me.height,
+            me.width,
+            me.height);
+        ctx.fillRect(canvas.width/2-me.width,
+            canvas.height/2-me.height-2*fontsize,
+            game_objects.health_bar.border.width,
+            game_objects.health_bar.border.height);
+        
+        ctx.fillStyle='#37ff00';//green
+        ctx.fillRect(canvas.width/2-me.width+(game_objects.health_bar.border.width-game_objects.health_bar.bar.width)/2,
+            canvas.height/2-me.height-2*fontsize+(game_objects.health_bar.border.height-game_objects.health_bar.bar.height)/2,
+            game_objects.health_bar.bar.width,
+            game_objects.health_bar.bar.height);
+    }else{
+        ctx.fillStyle='#000000';//black
+        ctx.drawImage(game_objects[me.name].image[me.direction],
+            canvas.width/2-me.width-game_objects.scythe.width,
+            canvas.height/2-me.height,
+            me.width,
+            me.height);
+        ctx.fillRect(canvas.width/2-me.width,
+            canvas.height/2-me.height-2*fontsize,
+            game_objects.health_bar.border.width,
+            game_objects.health_bar.border.height);
+        
+        ctx.fillStyle='#37ff00';//green
+        ctx.fillRect(canvas.width/2-me.width+(game_objects.health_bar.border.width-game_objects.health_bar.bar.width)/2,
+            canvas.height/2-me.height-2*fontsize+(game_objects.health_bar.border.height-game_objects.health_bar.bar.height)/2,
+            game_objects.health_bar.bar.width,
+            game_objects.health_bar.bar.height);
+    }
+    
+    ctx.fillStyle='#000000';//black
     ctx.fillText(me.nick,canvas.width/2-2.2*game_objects.scythe.width-fontsize/3*Math.floor(me.nick.length/2),canvas.height/2-me.height);
 }
 
@@ -120,7 +167,7 @@ socket.on(socket_message.init_player,token=>me.token=token);
 
 socket.on(socket_message.enter_room,room=>start_game());
 
-socket.on(socket_message.get_info,player=>{if(player!==undefined)me.position=player.position});
+socket.on(socket_message.get_info,player=>{if(player!==undefined){me=player;me.width=100;}});
 
 socket.on(socket_message.map_to_draw,map=>map_to_draw=map);
 
