@@ -21,9 +21,11 @@ class Room_guest{
 }
 
 class Game_object{
-    constructor(name,position){
+    constructor(name,position,nick,direction){
         this.name=name;
         this.position=position;
+        this.nick=nick;
+        this.direction=direction;
     }
 }
 
@@ -50,7 +52,9 @@ class Player{
         this.canvas=canvas;
     }
     room;
-    name;
+    nick;
+    name='reaper';
+    direction='right';
     position={
         x:200,
         y:200,
@@ -69,13 +73,13 @@ class Player{
 
 class Room{
     players=[];
-    constructor(socket,host,map){
+    constructor(host,map){
         this.map=map;
-        this.players.push(host,socket);
+        this.players.push(host);
         this.id=create_id();
     }
-    add_player(token,socket){
-        this.players.push(token,socket);
+    add_player(token){
+        this.players.push(token);
     }
 }
 
@@ -111,6 +115,8 @@ const map_size={x:4000,y:2000},initial_map=[],map_objects=[];
 
 for(let x=0;x<=map_size.x;x+=block_size)initial_map[x]=[];
 
+//walls
+
 for(let y=0;y<=map_size.y;y+=block_size){
     initial_map[0][y]=new Wall(0,y);
     map_objects.push(new Wall(0,y));
@@ -125,31 +131,36 @@ for(let x=block_size;x<=map_size.x-block_size;x+=block_size){
     map_objects.push(new Wall(x,map_size.y-block_size));
 }
 
-//functions
+//rooms
 
-function create_room(host,socket){
-    rooms.free.room=new Room(host,socket);
+function create_room(host){
+    rooms.free.room=new Room(host);
 }
 
-function connect_to_room(token,socket){
+function connect_to_room(token){
     if(rooms.free.available){
-        rooms.free.room.add_player(token,socket);
+        rooms.free.room.add_player(token);
         rooms.busy[rooms.free.room.id]=rooms.free.room;
+        players[token].room=rooms.free.room;
+        players[token].position.x=map_size.x-players[token].position.x;
+        players[token].direction='left';
         rooms.free.available=0;
-        return rooms.free.room;
     }else{
-        create_room(token,socket);
+        create_room(token);
+        players[token].room=rooms.free.room;
         rooms.free.available=1;
     }
 }
 
+//physics for players in rooms
+
 function physics(){
     Object.keys(players).forEach(key_player=>{
         if(players[key_player].room===undefined)return;
-        let sum_force={x:0,y:0};
 
         //summing forces
 
+        let sum_force={x:0,y:0};
         if(Object.keys(players[key_player].forces)[0]!==undefined)Object.keys(players[key_player].forces).forEach(key_force=>{
             sum_force.x+=players[key_player].forces[key_force].x;
             sum_force.y+=players[key_player].forces[key_force].y;
@@ -167,6 +178,8 @@ function physics(){
                 y:players[key_player].position.y+players[key_player].height,
             },
         };
+
+        //walls
 
         if(player.min.x<=3*block_size){
             sum_force.x=0;
@@ -191,6 +204,8 @@ function physics(){
             players[key_player].position.y-=position_delta;
         }
 
+        //players
+
         //forces to velocity and repositioning
 
         players[key_player].velocity.x+=sum_force.x/mass*delta_time;
@@ -202,6 +217,8 @@ function physics(){
     });
 }
 
+//info via *socket*
+
 function info_to_player(socket,token){
     if(players[token]===undefined)return;
     let map_to_draw=[],players_to_draw=[],player=players[token];
@@ -212,15 +229,29 @@ function info_to_player(socket,token){
     let max_x=Math.min(map_size.x-block_size,Math.floor((player.position.x+player.canvas.width/2+2*block_size)/(2*block_size))*2*block_size);
     let max_y=Math.min(map_size.y-block_size,Math.floor((player.position.y+player.canvas.height/2+2*block_size)/(2*block_size))*2*block_size);
 
+    //map
+
     for(let x=min_x;x<=max_x;x+=block_size){
         for(let y=min_y;y<=max_y;y+=block_size){
             if(initial_map[x][y]!==undefined)map_to_draw.push(new Game_object(initial_map[x][y].name,{x:x,y:y}));
         }
     }
 
+    //players
+
+    if(player.room!==undefined)player.room.players.forEach(in_room=>{//in_room===token of the player
+        if(in_room===token||in_room===undefined||players[in_room]===undefined)return;
+        players_to_draw.push(new Game_object(
+            players[in_room].name,
+            {x:players[in_room].position.x,y:players[in_room].position.y},
+            players[in_room].nick,
+            players[in_room].direction
+            ));
+    });
+
     socket.emit(socket_message.get_info,player);
     socket.emit(socket_message.map_to_draw,map_to_draw);
-    //socket.emit(socket_message.players_to_draw,players_to_draw);
+    socket.emit(socket_message.players_to_draw,players_to_draw);
 }
 
 //sockets
@@ -230,8 +261,8 @@ Io.on('connection', (socket)=>{
     let side_force_timeout=setTimeout(()=>{},10000);
 
     socket.on(socket_message.init_room, (player)=>{
-        socket.emit(socket_message.enter_room,connect_to_room(player.token,socket));
-        players[player.token].name=player.name;
+        socket.emit(socket_message.enter_room,connect_to_room(player.token));
+        players[player.token].nick=player.nick;
         players[player.token].forces.gravity=gravity;
         console.log(players);
     });
@@ -250,15 +281,17 @@ Io.on('connection', (socket)=>{
     socket.on(socket_message.button.left, (token)=>{
         players[token].forces.side.x=Math.max(-side_delta,players[token].forces.side.x-2*block_size*delta_time);
         players[token].side_force=true;
+        players[token].direction='left';
         clearTimeout(side_force_timeout);
-        side_force_timeout=setTimeout(()=>{players[token].side_force=false},2*block_size);
+        side_force_timeout=setTimeout(()=>{players[token].side_force=false},5*interval_time);
     });
 
     socket.on(socket_message.button.right, (token)=>{
         players[token].forces.side.x=Math.min(side_delta,players[token].forces.side.x+2*block_size*delta_time);
         players[token].side_force=true;
+        players[token].direction='right';
         clearTimeout(side_force_timeout);
-        side_force_timeout=setTimeout(()=>{players[token].side_force=false},2*block_size);
+        side_force_timeout=setTimeout(()=>{players[token].side_force=false},5*interval_time);
     });
 });
 
