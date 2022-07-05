@@ -41,6 +41,9 @@ const game_objects={
     },
 };
 const key_pressed={
+    ArrowUp:0,
+    ArrowLeft:0,
+    ArrowRight:0,
     KeyW:0,
     KeyA:0,
     KeyD:0,
@@ -51,6 +54,8 @@ let map_to_draw=[],players_to_draw=[];
 canvas.width=window.screen.width*1.5;
 canvas.height=window.screen.height*1.5;
 canvas.style=`width:${window.screen.width}px;height:${window.screen.height}px;margin-left:0px;margin-top:0px;`;
+ctx.font='30px serif';
+const fontsize=30;
 
 function room_connection_init(){
     me.nick=document.getElementById('name_input').value;
@@ -77,12 +82,12 @@ function draw(){
         else ctx.drawImage(game_objects[player.name].image[player.direction],
             canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width-game_objects.scythe.width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
             game_objects[player.name].width,game_objects[player.name].height);
-        ctx.fillText(player.nick,canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height);
+        ctx.fillText(player.nick,canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width+1*game_objects.scythe.width-fontsize/3*Math.floor(player.nick.length/2),canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height);
     });
 
-    if(me.direction==='right')ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.height,canvas.height/2-me.width,me.width,me.height);
-    else ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.height-game_objects.scythe.width,canvas.height/2-me.width,me.width,me.height);
-    ctx.fillText(me.nick,canvas.width/2-me.height,canvas.height/2-me.width);
+    if(me.direction==='right')ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.width,canvas.height/2-me.height,me.width,me.height);
+    else ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.width-game_objects.scythe.width,canvas.height/2-me.height,me.width,me.height);
+    ctx.fillText(me.nick,canvas.width/2-2.2*game_objects.scythe.width-fontsize/3*Math.floor(me.nick.length/2),canvas.height/2-me.height);
 }
 
 function start_game(){
@@ -126,12 +131,12 @@ socket.on(socket_message.players_to_draw,players=>players_to_draw=players);
 document.addEventListener('keydown',(key)=>{key_pressed[key.code]=1});
 document.addEventListener('keyup',(key)=>{key_pressed[key.code]=0});
 setInterval(()=>{
-    if(key_pressed.KeyW)socket.emit(socket_message.button.up,me.token);
-    if(key_pressed.KeyA){
+    if(key_pressed.KeyW||key_pressed.ArrowUp)socket.emit(socket_message.button.up,me.token);
+    if(key_pressed.KeyA||key_pressed.ArrowLeft){
         socket.emit(socket_message.button.left,me.token);
         me.direction='left';
     }
-    if(key_pressed.KeyD){
+    if(key_pressed.KeyD||key_pressed.ArrowRight){
         socket.emit(socket_message.button.right,me.token);
         me.direction='right';
     }
