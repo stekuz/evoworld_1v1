@@ -53,12 +53,14 @@ canvas.height=window.screen.height*1.5;
 canvas.style=`width:${window.screen.width}px;height:${window.screen.height}px;margin-left:0px;margin-top:0px;`;
 
 function room_connection_init(){
-    socket.emit(socket_message.init_room,{token:me.token,nick:document.getElementById('name_input').value});
+    me.nick=document.getElementById('name_input').value;
+    socket.emit(socket_message.init_room,{token:me.token,nick:me.nick});
 }
 
 function draw(){
-    ctx.fillStyle='#44c3e7';//blue
+    ctx.fillStyle='#44c3e7';//blue for bg
     ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#000000';//black for text
     
     map_to_draw.forEach(object=>{
         if(object===undefined)return;
@@ -75,10 +77,12 @@ function draw(){
         else ctx.drawImage(game_objects[player.name].image[player.direction],
             canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width-game_objects.scythe.width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height,
             game_objects[player.name].width,game_objects[player.name].height);
+        ctx.fillText(player.nick,canvas.width/2+player.position.x-me.position.x-game_objects[player.name].width,canvas.height/2+player.position.y-me.position.y-game_objects[player.name].height);
     });
 
     if(me.direction==='right')ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.height,canvas.height/2-me.width,me.width,me.height);
     else ctx.drawImage(game_objects[me.name].image[me.direction],canvas.width/2-me.height-game_objects.scythe.width,canvas.height/2-me.width,me.width,me.height);
+    ctx.fillText(me.nick,canvas.width/2-me.height,canvas.height/2-me.width);
 }
 
 function start_game(){
