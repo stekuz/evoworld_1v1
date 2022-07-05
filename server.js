@@ -168,7 +168,7 @@ function physics(){
 
         //collisions
 
-        let player={
+        let player1={
             min:{
                 x:players[key_player].position.x,
                 y:players[key_player].position.y,
@@ -177,34 +177,66 @@ function physics(){
                 x:players[key_player].position.x+players[key_player].width,
                 y:players[key_player].position.y+players[key_player].height,
             },
+            room:players[key_player].room,
+        };
+        let player2={
+            min:{},
+            max:{},
         };
 
         //walls
 
-        if(player.min.x<=3*block_size){
+        if(player1.min.x<=3*block_size){
             sum_force.x=0;
             players[key_player].forces.side.x=0;
             players[key_player].velocity.x=0;
             players[key_player].position.x+=position_delta;
         }
-        if(player.min.y<=3*block_size){
+        if(player1.min.y<=3*block_size){
             sum_force.y=0;
             players[key_player].velocity.y=0;
             players[key_player].position.y+=position_delta;
         }
-        if(player.max.x>=map_size.x+block_size){
+        if(player1.max.x>=map_size.x+block_size){
             sum_force.x=0;
             players[key_player].forces.side.x=0;
             players[key_player].velocity.x=0;
             players[key_player].position.x-=position_delta;
         }
-        if(player.max.y>=map_size.y+block_size){
+        if(player1.max.y>=map_size.y+block_size){
             sum_force.y=0;
             players[key_player].velocity.y=0;
             players[key_player].position.y-=position_delta;
         }
 
         //players
+
+        if(player1.room!==undefined)player1.room.players.forEach(in_room=>{//in_room===token of the player
+            if(in_room===key_player||in_room===undefined||players[in_room]===undefined)return;
+            player2.min.x=players[in_room].position.x;
+            player2.min.y=players[in_room].position.y;
+            player2.max.x=players[in_room].position.x+players[in_room].width;
+            player2.max.y=players[in_room].position.y+players[in_room].height;
+
+            if((player1.min.x>=player2.min.x&&player1.min.x<=player2.max.x||player1.max.x>=player2.min.x&&player1.max.x<=player2.max.x)&&
+            (player1.min.y>=player2.min.y&&player1.min.y<=player2.max.y||player1.max.y>=player2.min.y&&player1.max.y<=player2.max.y)){
+                let velocity_sum={
+                    x:players[key_player].velocity.x+players[in_room].velocity.x,
+                    y:players[key_player].velocity.y+players[in_room].velocity.y,
+                };
+
+                if(players[key_player].velocity.x>0!==players[in_room].velocity.x>0){
+                    players[key_player].velocity.x=velocity_sum.x;
+                    players[in_room].velocity.x=velocity_sum.x;
+                    players[key_player].position.x+=position_delta*(-1+2*(player1.min.x>player2.min.x));
+                }
+                if(players[key_player].velocity.y>0!==players[in_room].velocity.y>0){
+                    players[key_player].velocity.y=velocity_sum.y;
+                    players[in_room].velocity.y=velocity_sum.y;
+                    players[key_player].position.y+=position_delta*(-1+2*(player1.min.y>player2.min.y));
+                }
+            }
+        });
 
         //forces to velocity and repositioning
 
