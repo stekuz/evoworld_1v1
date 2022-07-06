@@ -1,4 +1,5 @@
 const socket_message={
+    ping:9,
     score:10,
     players_to_draw:11,
     map_to_draw:12,
@@ -66,6 +67,8 @@ const key_pressed={
     Space:0,
 };
 let map_to_draw=[],players_to_draw=[];
+let ping=0;
+
 
 canvas.width=window.screen.width*1.5;
 canvas.height=window.screen.height*1.5;
@@ -225,3 +228,11 @@ setInterval(()=>{
     }
     if(key_pressed.Space)socket.emit(socket_message.button.hit,me.token);
 },50);
+
+//ping
+
+socket.on(socket_message.ping,server_time=>{
+    ping=Date.now()-server_time;
+    document.getElementById('ping').innerHTML=ping+' ms';
+});
+setInterval(()=>socket.emit(socket_message.ping),1000);

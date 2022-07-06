@@ -1,5 +1,6 @@
 body{
     margin:0;
+    font-weight: bold;
 }
 
 #game{
@@ -40,4 +41,13 @@ body{
     right: 2%;
     font-size: 40px;
     z-index: -10;
+}
+
+#ping{
+    position: absolute;
+    bottom: 2%;
+    right: 2%;
+    font-size: 40px;
+    color: greenyellow;
+    z-index: 10;
 }

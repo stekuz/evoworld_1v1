@@ -99,6 +99,7 @@ class Room{
 }
 
 const socket_message={
+    ping:9,
     score:10,
     players_to_draw:11,
     map_to_draw:12,
@@ -512,6 +513,8 @@ Io.on('connection', (socket)=>{
             setTimeout(()=>{clearInterval(hit_interval)},interval_time*6);
         }
     });
+
+    socket.on(socket_message.ping,()=>socket.emit(socket_message.ping,Date.now()));
 });
 
 setInterval(physics,interval_time);
