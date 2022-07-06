@@ -85,6 +85,10 @@ class Room{
     add_player(token){
         players[this.players[0]].position={x:200,y:200};
         this.players.push(token);
+        if(players[this.players[0]].nick===players[this.players[1]].nick){
+            players[this.players[0]].nick+='_1';
+            players[this.players[1]].nick+='_2';
+        }
     }
 }
 
