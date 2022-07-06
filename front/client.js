@@ -1,4 +1,5 @@
 const socket_message={
+    score:10,
     players_to_draw:11,
     map_to_draw:12,
     get_info:13,

@@ -20,8 +20,24 @@ body{
 }
 
 #room_id_out{
-    top: 5%;
-    left: 10%;
+    bottom: 2%;
+    left: 2%;
     position: absolute;
     z-index: -5;
+}
+
+#scores1{
+    position: absolute;
+    top: 2%;
+    left: 2%;
+    font-size: 40px;
+    z-index: -10;
+}
+
+#scores2{
+    position: absolute;
+    top: 2%;
+    right: 2%;
+    font-size: 40px;
+    z-index: -10;
 }

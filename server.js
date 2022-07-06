@@ -54,6 +54,7 @@ class Player{
     };
     damage=35;
     health=100;
+    score=0;
     room;
     nick;
     name='reaper';
@@ -85,15 +86,15 @@ class Room{
     add_player(token){
         players[this.players[0]].position={x:200,y:200};
         this.players.push(token);
-        console.log(players[this.players[0]].nick);console.log(players[token]);
         if(players[this.players[0]].nick===players[token].nick){
             players[this.players[0]].nick+='-1';
-            players[this.players[1]].nick+='-2';
+            players[token].nick+='-2';
         }
     }
 }
 
 const socket_message={
+    score:10,
     players_to_draw:11,
     map_to_draw:12,
     get_info:13,
@@ -433,8 +434,9 @@ Io.on('connection', (socket)=>{
 
         if(type==='connect'){
             if(created_rooms[player.room_id]===undefined)return;
-            connect_to_player_room(player.token,player.room_id);
+            if(created_rooms[player.room_id].players.length===2)return;
             players[player.token].nick=player.nick;
+            connect_to_player_room(player.token,player.room_id);
             socket.emit(socket_message.enter_room.connect);
         }
     });
