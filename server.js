@@ -83,10 +83,13 @@ class Room{
     constructor(token,map){
         this.map=map;
         this.players.push(token);
+        if(players[token].nick===undefined)players[token].nick='Player';
     }
     add_player(token){
-        players[this.players[0]].position={x:200,y:200};
+        if(players[token].nick===undefined)players[token].nick='Player';
+
         this.players.push(token);
+        players[this.players[0]].position={x:200,y:200};
 
         players[this.players[0]].end_round=true;
         players[this.players[1]].end_round=true;
@@ -180,6 +183,13 @@ function create_token(){
     return token;
 }
 
+//test player/room
+
+let test_token=create_token();
+players[test_token]=new Player({width:0,height:0});
+players[test_token].nick='Kill me (space)';
+connect_to_random_room(test_token);
+
 //rooms
 
 function create_random_room(token){
@@ -209,6 +219,12 @@ function connect_to_random_room(token){
         players[token].position.x=map_size.x-players[token].position.x;
         players[token].direction='left';
         random_rooms.free.available=0;
+        //test
+        test_token=create_token();
+        players[test_token]=new Player({width:0,height:0});
+        players[test_token].nick='Kill me (space)';
+        connect_to_random_room(test_token);
+        //
     }else{
         create_random_room(token);
         players[token].room=random_rooms.free.room;
@@ -250,7 +266,7 @@ function hit(token){
             players[player].health-=players[token].damage;
             players[token].success=true;
 
-            if(players[player].health<=0)setTimeout(winner,hit_delta*8,token);
+            if(players[player].health<=0)setTimeout(winner,hit_delta*4,token);
         }
     });
 }
