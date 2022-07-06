@@ -58,6 +58,8 @@ const game_objects={
     },
 };
 const key_pressed={
+    0:0,
+    2:0,
     ArrowUp:0,
     ArrowLeft:0,
     ArrowRight:0,
@@ -214,10 +216,13 @@ socket.on(socket_message.players_to_draw,players=>players_to_draw=players);
 
 //keyboard/mouse events
 
-document.addEventListener('keydown',(key)=>{key_pressed[key.code]=1});
-document.addEventListener('keyup',(key)=>{key_pressed[key.code]=0});
+document.addEventListener('contextmenu',menu=>menu.preventDefault());
+document.addEventListener('keydown',key=>key_pressed[key.code]=1);
+document.addEventListener('keyup',key=>key_pressed[key.code]=0);
+document.addEventListener('mousedown',mouse=>key_pressed[mouse.button]=1);
+document.addEventListener('mouseup',mouse=>key_pressed[mouse.button]=0);
 setInterval(()=>{
-    if(key_pressed.KeyW||key_pressed.ArrowUp)socket.emit(socket_message.button.up,me.token);
+    if(key_pressed.KeyW||key_pressed.ArrowUp||key_pressed[0])socket.emit(socket_message.button.up,me.token);
     if(key_pressed.KeyA||key_pressed.ArrowLeft){
         socket.emit(socket_message.button.left,me.token);
         me.direction='left';
@@ -226,7 +231,7 @@ setInterval(()=>{
         socket.emit(socket_message.button.right,me.token);
         me.direction='right';
     }
-    if(key_pressed.Space)socket.emit(socket_message.button.hit,me.token);
+    if(key_pressed.Space||key_pressed[2])socket.emit(socket_message.button.hit,me.token);
 },50);
 
 //ping

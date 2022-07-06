@@ -1,7 +1,9 @@
 const express=require('express');
 const app=express();
 const path=require('path');
-const server=require('http').createServer(app);
+const http=require('http');
+const server=http.createServer(app);
+const request=require('request');
 const Io=require('socket.io')(server);
 
 app.use(express.json());
@@ -83,10 +85,10 @@ class Room{
     constructor(token,map){
         this.map=map;
         this.players.push(token);
-        if(players[token].nick===undefined)players[token].nick='Player';
+        if(players[token].nick===undefined||players[token].nick==='')players[token].nick='Player';
     }
     add_player(token){
-        if(players[token].nick===undefined)players[token].nick='Player';
+        if(players[token].nick===undefined||players[token].nick==='')players[token].nick='Player';
 
         this.players.push(token);
         players[this.players[0]].position={x:200,y:200};
@@ -187,7 +189,7 @@ function create_token(){
 
 let test_token=create_token();
 players[test_token]=new Player({width:0,height:0});
-players[test_token].nick='Kill me (space)';
+players[test_token].nick='Kill me';
 connect_to_random_room(test_token);
 
 //rooms
@@ -222,7 +224,7 @@ function connect_to_random_room(token){
         //test
         test_token=create_token();
         players[test_token]=new Player({width:0,height:0});
-        players[test_token].nick='Kill me (space)';
+        players[test_token].nick='Kill me';
         connect_to_random_room(test_token);
         //
     }else{
@@ -263,6 +265,7 @@ function hit(token){
         if(token===player||player===undefined)return;
 
         if(is_collision(players[player],players[token].scythe)){
+            if(players[player].health<=0)return;
             players[player].health-=players[token].damage;
             players[token].success=true;
 
