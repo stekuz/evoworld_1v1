@@ -35,7 +35,7 @@ const game_objects={
     },
     scythe:{
         width:35,
-        height:110,
+        height:130,
     },
     wall:{
         width:50,

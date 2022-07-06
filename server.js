@@ -58,7 +58,7 @@ class Player{
             y:195,
         },
         width:35,
-        height:110,
+        height:130,
     };
     damage=35;
     health=100;
@@ -110,7 +110,7 @@ const socket_message={
     init_player:20,
 };
 
-const rooms={
+const random_rooms={
     free:{
         available:0,
     },
@@ -157,21 +157,21 @@ for(let x=block_size;x<=map_size.x-block_size;x+=block_size){
 //rooms
 
 function create_room(host){
-    rooms.free.room=new Room(host);
+    random_rooms.free.room=new Room(host);
 }
 
 function connect_to_room(token){
-    if(rooms.free.available){
-        rooms.free.room.add_player(token);
-        rooms.busy[rooms.free.room.id]=rooms.free.room;
-        players[token].room=rooms.free.room;
+    if(random_rooms.free.available){
+        random_rooms.free.room.add_player(token);
+        random_rooms.busy[random_rooms.free.room.id]=random_rooms.free.room;
+        players[token].room=random_rooms.free.room;
         players[token].position.x=map_size.x-players[token].position.x;
         players[token].direction='left';
-        rooms.free.available=0;
+        random_rooms.free.available=0;
     }else{
         create_room(token);
-        players[token].room=rooms.free.room;
-        rooms.free.available=1;
+        players[token].room=random_rooms.free.room;
+        random_rooms.free.available=1;
     }
 }
 
@@ -184,6 +184,7 @@ function is_collision(object1,object2){//object~{position{x,y},width,height}
 
 function hit(token){
     if(players[token]===undefined)return;
+    if(players[token].success)return;
     if(players[token].room===undefined)return;
 
     players[token].room.players.forEach(player=>{//player~token
@@ -191,6 +192,7 @@ function hit(token){
 
         if(is_collision(players[player],players[token].scythe)){
             players[player].health-=players[token].damage;
+            players[token].success=true;
         }
     });
 }
@@ -330,7 +332,7 @@ function physics(){
 
         //scythe 
 
-        players[key_player].scythe.position.y=players[key_player].position.y-(players[key_player].scythe.height-players[key_player].height)/2;
+        players[key_player].scythe.position.y=players[key_player].position.y-5;
         if(players[key_player].direction==='right')players[key_player].scythe.position.x=players[key_player].position.x+players[key_player].width;
         else players[key_player].scythe.position.x=players[key_player].position.x-players[key_player].scythe.width;
     });
@@ -423,8 +425,10 @@ Io.on('connection', (socket)=>{
         if(players[token]===undefined)return;
         if(players[token].can_hit&&players[token].health>0){
             players[token].can_hit=false;
+            players[token].success=false;
             setTimeout(()=>players[token].can_hit=true,hit_delta);
-            hit(token);
+            let hit_interval=setInterval(hit,interval_time,token);
+            setTimeout(()=>{clearInterval(hit_interval)},interval_time*6);
         }
     });
 });
