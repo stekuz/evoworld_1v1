@@ -8,9 +8,13 @@ const socket_message={
         left:16,
         right:17,
     },
-    enter_room:18,
-    init_room:19,
-    init_player:20,
+    enter_room:{
+        create:18,
+        connect:19,
+        random:20,
+    },
+    init_room:21,
+    init_player:22,
 };
 const socket=io();
 const canvas=document.getElementById('game');
@@ -68,9 +72,15 @@ canvas.style=`width:${window.screen.width}px;height:${window.screen.height}px;ma
 ctx.font='30px serif';
 const fontsize=30;
 
-function room_connection_init(){
-    me.nick=document.getElementById('name_input').value;
-    socket.emit(socket_message.init_room,{token:me.token,nick:me.nick});
+function room_connection_init(type){
+    if(type==='random'||type==='create'){
+        me.nick=document.getElementById('name_input').value;
+        socket.emit(socket_message.init_room,{token:me.token,nick:me.nick},type);
+    }
+    if(type==='connect'){
+        me.nick=document.getElementById('name_input').value;
+        socket.emit(socket_message.init_room,{token:me.token,nick:me.nick,room_id:document.getElementById('room_id_in').value},type);
+    }
 }
 
 function draw(){
@@ -172,30 +182,16 @@ function start_game(){
     setInterval(draw,20);
 }
 
-/*
-
-function rand8(){
-    return(Math.floor(Math.random()*100000000));
-}
-
-function create_token(){
-    let token='';
-    for(let i=0;i<3;i++){
-        token+=rand8();
-        token+='-';
-    }
-    token+=rand8();
-    return token;
-}
-
-me.token=create_token();
-*/
-
 socket.emit(socket_message.init_player,{width:canvas.width,height:canvas.height});
-
 socket.on(socket_message.init_player,token=>{me.token=token});
 
-socket.on(socket_message.enter_room,room=>start_game());
+socket.on(socket_message.enter_room.connect,()=>start_game());
+socket.on(socket_message.enter_room.create,room_id=>{
+    start_game();
+    document.getElementById('room_id_out').style.zIndex=1;
+    document.getElementById('room_id_out').innerHTML='room id: '+room_id;
+});
+socket.on(socket_message.enter_room.random,()=>start_game());
 
 socket.on(socket_message.get_info,player=>{if(player!==undefined){
     me.position=player.position;
@@ -203,7 +199,6 @@ socket.on(socket_message.get_info,player=>{if(player!==undefined){
 }});
 
 socket.on(socket_message.map_to_draw,map=>map_to_draw=map);
-
 socket.on(socket_message.players_to_draw,players=>players_to_draw=players);
 
 //keyboard/mouse events

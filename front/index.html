@@ -6,9 +6,17 @@
     </head>
     <body>
             <div id="pre_game">
-                <input type="text" id="name_input" placeholder="your name">
-                <button id="play_button" onpointerdown="room_connection_init()">play</button>
+                <div>
+                    <input type="text" id="name_input" placeholder="your name">
+                    <button onpointerdown="room_connection_init('random')">random room</button>
+                </div>
+                <div>
+                    <input type="text" id="room_id_in" placeholder="room id">
+                    <button onpointerdown="room_connection_init('connect')">connect to room</button>
+                </div>
+                <button onpointerdown="room_connection_init('create')">create room</button>
             </div>
+            <div id="room_id_out"></div>
             <canvas id="game"></canvas>
             <script src="socket.io_4.5.1.js"></script>
             <script src="images.js"></script>

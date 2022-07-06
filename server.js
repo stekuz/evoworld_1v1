@@ -1,4 +1,3 @@
-const create_id=require('uuid').v1;
 const express=require('express');
 const app=express();
 const path=require('path');
@@ -13,13 +12,6 @@ app.get('/',(req,res)=>{
 });
 server.listen(80,()=>console.log('run!'));
 
-class Room_guest{
-    constructor(token,socket){
-        this.token=token;
-        this.socket=socket;
-    }
-}
-
 class Game_object{
     constructor(name,position,nick,direction,health){
         this.name=name;
@@ -31,7 +23,7 @@ class Game_object{
 }
 
 class Wall{
-    name="wall";
+    name='wall';
     constructor(x,y){
         this.x=x;
         this.y=y;
@@ -76,6 +68,7 @@ class Player{
     height=100;
     forces={
         side:new Force(0,0),
+        gravity:new Force(0,5),
     };
     velocity={
         x:0,
@@ -85,12 +78,12 @@ class Player{
 
 class Room{
     players=[];
-    constructor(host,map){
+    constructor(token,map){
         this.map=map;
-        this.players.push(host);
-        this.id=create_id();
+        this.players.push(token);
     }
     add_player(token){
+        players[this.players[0]].position={x:200,y:200};
         this.players.push(token);
     }
 }
@@ -105,9 +98,13 @@ const socket_message={
         left:16,
         right:17,
     },
-    enter_room:18,
-    init_room:19,
-    init_player:20,
+    enter_room:{
+        create:18,
+        connect:19,
+        random:20,
+    },
+    init_room:21,
+    init_player:22,
 };
 
 const random_rooms={
@@ -117,8 +114,9 @@ const random_rooms={
     busy:{},
 };
 
+const created_rooms={};
+
 const players={};
-const gravity=new Force(0,5);
 const //scale
 interval_time=20,
 delta_time=0.4,
@@ -154,22 +152,53 @@ for(let x=block_size;x<=map_size.x-block_size;x+=block_size){
     map_objects.push(new Wall(x,map_size.y-block_size));
 }
 
-//rooms
+//tokens
 
-function create_room(host){
-    random_rooms.free.room=new Room(host);
+function rand8(){
+    return(Math.floor(Math.random()*100000000));
 }
 
-function connect_to_room(token){
+function create_token(){
+    let token='';
+    for(let i=0;i<3;i++){
+        token+=rand8();
+        token+='-';
+    }
+    token+=rand8();
+    return token;
+}
+
+//rooms
+
+function create_random_room(token){
+    random_rooms.free.room=new Room(token);
+}
+
+function create_player_room(token){
+    let room_id=create_token();
+    created_rooms[room_id]=new Room(token);
+    players[token].room=created_rooms[room_id];
+    return room_id;
+}
+
+function connect_to_player_room(token,room_id){
+    created_rooms[room_id].add_player(token);
+    players[token].room=created_rooms[room_id];
+    players[token].position.x=map_size.x-players[token].position.x;
+    players[token].direction='left';
+}
+
+function connect_to_random_room(token){
     if(random_rooms.free.available){
+        let room_id=create_token();
         random_rooms.free.room.add_player(token);
-        random_rooms.busy[random_rooms.free.room.id]=random_rooms.free.room;
+        random_rooms.busy[room_id]=random_rooms.free.room;
         players[token].room=random_rooms.free.room;
         players[token].position.x=map_size.x-players[token].position.x;
         players[token].direction='left';
         random_rooms.free.available=0;
     }else{
-        create_room(token);
+        create_random_room(token);
         players[token].room=random_rooms.free.room;
         random_rooms.free.available=1;
     }
@@ -382,20 +411,35 @@ Io.on('connection', (socket)=>{
     let get_interval=setInterval(()=>{},1000000);
     let side_force_timeout=setTimeout(()=>{},10000);
 
-    socket.on(socket_message.init_room, (player)=>{
-        socket.emit(socket_message.enter_room,connect_to_room(player.token));
-        players[player.token].nick=player.nick;
-        players[player.token].forces.gravity=gravity;
-        //console.log(players);
+    socket.on(socket_message.init_room, (player,type)=>{
+        if(player===undefined)return;
+        if(players[player.token]===undefined)return;
+
+        console.log(type);
+        if(type==='random'){
+            socket.emit(socket_message.enter_room.random,connect_to_random_room(player.token));
+            players[player.token].nick=player.nick;
+        }
+
+        if(type==='create'){
+            players[player.token].nick=player.nick;
+            socket.emit(socket_message.enter_room.create,create_player_room(player.token));
+        }
+
+        if(type==='connect'){
+            if(created_rooms[player.room_id]===undefined)return;
+            connect_to_player_room(player.token,player.room_id);
+            players[player.token].nick=player.nick;
+            socket.emit(socket_message.enter_room.connect);
+        }
     });
 
     socket.on(socket_message.init_player, (canvas)=>{
-        let token=create_id();
+        let token=create_token();
         players[token]=new Player(canvas);
         socket.emit(socket_message.init_player, token);
         clearInterval(get_interval);
         get_interval=setInterval(info_to_player,interval_time,socket,token);
-        //console.log(players);
     });
 
     socket.on(socket_message.button.up, (token)=>{
