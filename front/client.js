@@ -235,4 +235,4 @@ socket.on(socket_message.ping,server_time=>{
     ping=Date.now()-server_time;
     document.getElementById('ping').innerHTML=ping+' ms';
 });
-setInterval(()=>socket.emit(socket_message.ping),1000);
+setInterval(()=>socket.emit(socket_message.ping),2000);
