@@ -180,6 +180,8 @@ function draw(){
 
 function start_game(){
     document.getElementById('pre_game').style.zIndex=-1;
+    document.getElementById('scores1').style.zIndex=2;
+    document.getElementById('scores2').style.zIndex=2;
     setInterval(draw,20);
 }
 
@@ -194,6 +196,10 @@ socket.on(socket_message.enter_room.create,room_id=>{
 });
 socket.on(socket_message.enter_room.random,()=>start_game());
 
+socket.on(socket_message.score,scores=>{
+    document.getElementById('scores1').innerHTML=scores[0].nick+':   '+scores[0].score;
+    document.getElementById('scores2').innerHTML=scores[1].nick+':   '+scores[1].score;
+});
 socket.on(socket_message.get_info,player=>{if(player!==undefined){
     me.position=player.position;
     me.health=player.health;

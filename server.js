@@ -55,6 +55,7 @@ class Player{
     damage=35;
     health=100;
     score=0;
+    end_round=false;
     room;
     nick;
     name='reaper';
@@ -86,9 +87,13 @@ class Room{
     add_player(token){
         players[this.players[0]].position={x:200,y:200};
         this.players.push(token);
-        if(players[this.players[0]].nick===players[token].nick){
+
+        players[this.players[0]].end_round=true;
+        players[this.players[1]].end_round=true;
+
+        if(players[this.players[0]].nick===players[this.players[1]].nick){
             players[this.players[0]].nick+='-1';
-            players[token].nick+='-2';
+            players[this.players[1]].nick+='-2';
         }
     }
 }
@@ -210,6 +215,21 @@ function connect_to_random_room(token){
     }
 }
 
+function winner(token){
+    players[token].score++;
+    players[token].health=100;
+    players[token].position={x:200,y:200};
+    players[token].end_round=true;
+
+    players[token].room.players.forEach(player=>{
+        if(players[player]===undefined||player===token)return;
+
+        players[player].health=100;
+        players[player].position={x:map_size.x-200,y:map_size.y-200};
+        players[player].end_round=true;
+    });
+}
+
 //physics for players in rooms
 
 function is_collision(object1,object2){//object~{position{x,y},width,height}
@@ -228,6 +248,8 @@ function hit(token){
         if(is_collision(players[player],players[token].scythe)){
             players[player].health-=players[token].damage;
             players[token].success=true;
+
+            if(players[player].health<=0)setTimeout(winner,hit_delta*8,token);
         }
     });
 }
@@ -377,7 +399,8 @@ function physics(){
 
 function info_to_player(socket,token){
     if(players[token]===undefined)return;
-    let map_to_draw=[],players_to_draw=[],player=players[token];
+    let map_to_draw=[],players_to_draw=[],player=players[token],scores=[];
+    if(player.end_round)scores.push({nick:player.nick,score:player.score});
 
     let min_x=Math.max(0,Math.floor((player.position.x-player.canvas.width/2-2*block_size)/(2*block_size))*2*block_size);
     let min_y=Math.max(0,Math.floor((player.position.y-player.canvas.height/2-2*block_size)/(2*block_size))*2*block_size);
@@ -396,7 +419,10 @@ function info_to_player(socket,token){
     //players
 
     if(player.room!==undefined)player.room.players.forEach(in_room=>{//in_room===token of the player
-        if(in_room===token||in_room===undefined||players[in_room]===undefined)return;
+        if(in_room===token||players[in_room]===undefined)return;
+
+        if(player.end_round)scores.push({nick:players[in_room].nick,score:players[in_room].score});
+
         players_to_draw.push(new Game_object(
             players[in_room].name,
             {x:players[in_room].position.x,y:players[in_room].position.y},
@@ -406,6 +432,10 @@ function info_to_player(socket,token){
             ));
     });
 
+    if(player.end_round){
+        players[token].end_round=false;
+        socket.emit(socket_message.score,scores);
+    }
     socket.emit(socket_message.get_info,player);
     socket.emit(socket_message.map_to_draw,map_to_draw);
     socket.emit(socket_message.players_to_draw,players_to_draw);
