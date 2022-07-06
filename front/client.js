@@ -196,6 +196,7 @@ socket.on(socket_message.enter_room.random,()=>start_game());
 socket.on(socket_message.get_info,player=>{if(player!==undefined){
     me.position=player.position;
     me.health=player.health;
+    me.nick=player.nick;
 }});
 
 socket.on(socket_message.map_to_draw,map=>map_to_draw=map);

@@ -85,9 +85,10 @@ class Room{
     add_player(token){
         players[this.players[0]].position={x:200,y:200};
         this.players.push(token);
-        if(players[this.players[0]].nick===players[this.players[1]].nick){
-            players[this.players[0]].nick+='_1';
-            players[this.players[1]].nick+='_2';
+        console.log(players[this.players[0]].nick);console.log(players[token]);
+        if(players[this.players[0]].nick===players[token].nick){
+            players[this.players[0]].nick+='-1';
+            players[this.players[1]].nick+='-2';
         }
     }
 }
@@ -421,8 +422,8 @@ Io.on('connection', (socket)=>{
 
         console.log(type);
         if(type==='random'){
-            socket.emit(socket_message.enter_room.random,connect_to_random_room(player.token));
             players[player.token].nick=player.nick;
+            socket.emit(socket_message.enter_room.random,connect_to_random_room(player.token));
         }
 
         if(type==='create'){
